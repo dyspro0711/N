@@ -3,25 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Rhythm Game : Patterns</title>
+    <title>Neon Rhythm Game : Shop Update</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="title-screen" class="screen active">
         <h1 class="game-title">NEON BEAT</h1>
+        <div class="user-info">
+            <span id="user-points">POINTS: 0</span>
+        </div>
         <button class="menu-btn" onclick="openModeSelect()">GAME START</button>
+        <button class="menu-btn" onclick="openShop()">SHOP</button>
         <button class="menu-btn" onclick="openSettings()" style="margin-top:20px;">SETTINGS</button>
-        <p class="footer">Fixed Pattern Update</p>
+        <p class="footer">Ver 3.0 : SHOP & SKINS</p>
     </div>
 
     <div id="mode-select-screen" class="screen hidden">
         <h2>SELECT MODE</h2>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="startPracticeMode()">PRACTICE<br><span style="font-size:14px; color:#aaa;">Random / Custom Speed</span></button>
-            <button class="menu-btn" onclick="openStageSelect()">STAGE MODE<br><span style="font-size:14px; color:#aaa;">Fixed Patterns (1~12)</span></button>
-            <button class="menu-btn" onclick="startInfinityMode()">INFINITY<br><span style="font-size:14px; color:#aaa;">Endless Random</span></button>
+            <button class="menu-btn" onclick="openStageSelect()">STAGE MODE<br><span style="font-size:14px; color:#aaa;">Fixed Patterns (1~13)</span></button>
+            <button class="menu-btn" onclick="startInfinityMode()">INFINITY<br><span style="font-size:14px; color:#aaa;">Speed Up (Max 15)</span></button>
         </div>
+        <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
+    </div>
+
+    <div id="shop-screen" class="screen hidden">
+        <h2>ITEM SHOP</h2>
+        <div class="shop-header">
+            <span id="shop-points">POINTS: 0</span>
+        </div>
+        <div class="shop-grid" id="shop-grid">
+            </div>
         <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
     </div>
 
@@ -72,6 +86,10 @@
                         <p class="label">TARGET</p>
                         <p class="value" id="target-score">0</p>
                     </div>
+                    <div id="speed-box" class="hidden" style="margin-top:10px;">
+                        <p class="label" style="color:#00ffff">SPEED</p>
+                        <p class="value" id="current-speed-display">5.0</p>
+                    </div>
                 </div>
                 <button class="menu-btn small back-btn" onclick="backToModeSelect()">EXIT</button>
             </div>
@@ -86,6 +104,7 @@
                     <div id="game-over-screen" class="overlay hidden">
                         <h1>GAME OVER</h1>
                         <p>FINAL SCORE: <span id="final-score">0</span></p>
+                        <p style="color:#ffff00; margin-top:10px;">EARNED POINTS: <span id="earned-points">0</span></p>
                         <button class="menu-btn small" onclick="retryGame()">RETRY (R)</button>
                         <button class="menu-btn small" onclick="backToModeSelect()">EXIT</button>
                     </div>
@@ -93,6 +112,7 @@
                     <div id="stage-clear-screen" class="overlay hidden">
                         <h1 style="color:#00ff00; text-shadow:0 0 30px #00ff00;">STAGE CLEAR!</h1>
                         <p>SCORE: <span id="clear-final-score">0</span></p>
+                        <p style="color:#ffff00; margin-top:10px;">EARNED POINTS: <span id="clear-earned-points">0</span></p>
                         <button class="menu-btn small" onclick="nextStage()">NEXT STAGE</button>
                         <button class="menu-btn small" onclick="backToModeSelect()">MENU</button>
                     </div>
