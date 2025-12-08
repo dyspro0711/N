@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Rhythm Game : Shop Update</title>
+    <title>Neon Rhythm Game : Backgrounds</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
         <button class="menu-btn" onclick="openModeSelect()">GAME START</button>
         <button class="menu-btn" onclick="openShop()">SHOP</button>
         <button class="menu-btn" onclick="openSettings()" style="margin-top:20px;">SETTINGS</button>
-        <p class="footer">Ver 3.0 : SHOP & SKINS</p>
+        <p class="footer">Ver 4.0 : BACKGROUND UPDATE</p>
     </div>
 
     <div id="mode-select-screen" class="screen hidden">
@@ -34,6 +34,12 @@
         <div class="shop-header">
             <span id="shop-points">POINTS: 0</span>
         </div>
+        
+        <div class="shop-tabs">
+            <button class="shop-tab active" onclick="switchShopTab('note')">NOTE SKINS</button>
+            <button class="shop-tab" onclick="switchShopTab('bg')">BACKGROUNDS</button>
+        </div>
+
         <div class="shop-grid" id="shop-grid">
             </div>
         <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
