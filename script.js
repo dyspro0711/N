@@ -2,9 +2,18 @@
 const GAME_HEIGHT = 700;
 const JUDGMENT_BOTTOM = 100;
 const JUDGMENT_Y = GAME_HEIGHT - JUDGMENT_BOTTOM;
-const HIT_RANGE_PERFECT = 30;
-const HIT_RANGE_GOOD = 60;
+const HIT_RANGE_PERFECT = 35;
+const HIT_RANGE_GOOD = 70;
 const MAX_LIVES = 3;
+
+// --- 상점 아이템 데이터 ---
+const SHOP_ITEMS = [
+    { id: 'default', name: 'NEON (Default)', price: 0, class: '', preview: 'preview-default' },
+    { id: 'gold',    name: 'GOLD RUSH',      price: 100, class: 'skin-gold', preview: 'preview-gold' },
+    { id: 'matrix',  name: 'THE MATRIX',     price: 250, class: 'skin-matrix', preview: 'preview-matrix' },
+    { id: 'fire',    name: 'INFERNO',        price: 500, class: 'skin-fire', preview: 'preview-fire' },
+    { id: 'ice',     name: 'FROST BITE',     price: 500, class: 'skin-ice', preview: 'preview-ice' }
+];
 
 // --- 스테이지 데이터 ---
 const STAGE_DATA = [
@@ -18,12 +27,15 @@ const STAGE_DATA = [
     { level: 8, speed: 10, target: 36000 },
     { level: 9, speed: 11, target: 42000 },
     { level: 10, speed: 13, target: 50000 },
-    { level: 11, speed: 10, target: 60000 }, // 고정 패턴: 엇박 & 동시타
-    { level: 12, speed: 10, target: 75000 }  // 고정 패턴: 트릴 & 계단
+    { level: 11, speed: 10, target: 60000 },
+    { level: 12, speed: 10, target: 75000 },
+    { level: 13, speed: 11, target: 80000 } 
 ];
 
 // --- 변수 ---
 let userSettingSpeed = 5;
+let infinitySpeed = 5; // [NEW] 인피니티 모드 가변 속도
+
 let userKeys = ['KeyD', 'KeyF', 'KeyJ', 'KeyK']; 
 let bindingTrack = -1;
 
@@ -32,6 +44,8 @@ let currentStage = 1;
 let targetScore = 0;       
 
 let score = 0;
+let points = 0; // [NEW] 소지 포인트
+let earnedPoints = 0; // 이번 판에 얻은 포인트
 let highScore = 0;
 let combo = 0;
 let maxCombo = 0;
@@ -49,128 +63,113 @@ let nextNoteIndex = 0;
 
 let clearedStages = []; 
 
-// --- [핵심] 시드 기반 랜덤 함수 (고정 패턴 생성용) ---
+// [NEW] 스킨 관련 변수
+let ownedSkins = ['default'];
+let equippedSkin = 'default';
+
+// 시드 기반 랜덤
 let _seed = 1;
 function setSeed(s) { _seed = s; }
 function seededRandom() {
-    // 간단한 LCG 알고리즘으로 항상 같은 순서의 난수 생성
     _seed = (_seed * 9301 + 49297) % 233280;
     return _seed / 233280;
 }
 
+// --- 저장 데이터 로드/저장 ---
 function loadData() {
     const savedScore = localStorage.getItem('neonBeatInfiniteHighScore');
     if (savedScore) highScore = parseInt(savedScore);
+    
     const savedStages = localStorage.getItem('neonBeatClearedStages');
     if (savedStages) clearedStages = JSON.parse(savedStages);
+
+    const savedPoints = localStorage.getItem('neonBeatPoints');
+    if (savedPoints) points = parseInt(savedPoints);
+
+    const savedSkins = localStorage.getItem('neonBeatOwnedSkins');
+    if (savedSkins) ownedSkins = JSON.parse(savedSkins);
+
+    const savedEquip = localStorage.getItem('neonBeatEquippedSkin');
+    if (savedEquip) equippedSkin = savedEquip;
+
+    updatePointDisplay();
 }
 
 function saveData() {
     localStorage.setItem('neonBeatInfiniteHighScore', highScore);
     localStorage.setItem('neonBeatClearedStages', JSON.stringify(clearedStages));
+    localStorage.setItem('neonBeatPoints', points);
+    localStorage.setItem('neonBeatOwnedSkins', JSON.stringify(ownedSkins));
+    localStorage.setItem('neonBeatEquippedSkin', equippedSkin);
 }
 
 // ==========================================
-// 1. 고정 패턴 생성기 (수정됨: 시드 적용)
+// 1. 상점 시스템 (NEW)
 // ==========================================
-function generateFixedPattern(level) {
-    // ★ 핵심: 레벨을 시드로 설정하여 매번 똑같은 패턴 생성
-    setSeed(level * 100); 
+function openShop() {
+    document.getElementById('title-screen').classList.remove('active');
+    document.getElementById('shop-screen').classList.remove('hidden');
+    document.getElementById('shop-screen').classList.add('active');
+    renderShop();
+}
 
-    const pattern = [];
-    const duration = 40000 + (level * 2000); // 40초 ~ 60초
-    
-    // 기본 박자 간격
-    let baseInterval = Math.max(200, 800 - (level * 50)); 
+function renderShop() {
+    const grid = document.getElementById('shop-grid');
+    grid.innerHTML = '';
+    document.getElementById('shop-points').innerText = `POINTS: ${points}`;
 
-    // --- 스테이지별 패턴 로직 ---
-    
-    if (level === 11) {
-        // [Stage 11] 엇박자 & 2개 동시 치기 (Speed 10)
-        let t = 1000;
-        while(t < duration) {
-            // 패턴 블록 (0: 정박 단타, 1: 엇박, 2: 동시타)
-            let pType = Math.floor(seededRandom() * 3);
-            
-            if (pType === 0) { // 단타 4개
-                for(let i=0; i<4; i++) {
-                    pattern.push({ time: t, track: Math.floor(seededRandom() * 4), type: 'normal', length: 35 });
-                    t += 300;
-                }
-            } else if (pType === 1) { // 엇박 (빠르게 따닥)
-                for(let i=0; i<4; i++) {
-                    let lane = Math.floor(seededRandom() * 4);
-                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
-                    t += 150; // 간격 좁음
-                    pattern.push({ time: t, track: (lane+1)%4, type: 'normal', length: 35 });
-                    t += 450; // 쉬는 시간
-                }
-            } else { // 동시타 (Chord)
-                for(let i=0; i<2; i++) {
-                    let lane = Math.floor(seededRandom() * 4);
-                    let lane2 = (lane + 2) % 4;
-                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
-                    pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
-                    t += 600;
-                }
+    SHOP_ITEMS.forEach(item => {
+        const isOwned = ownedSkins.includes(item.id);
+        const isEquipped = equippedSkin === item.id;
+        
+        const div = document.createElement('div');
+        div.className = `shop-item ${isOwned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}`;
+        
+        // 아이템 HTML
+        div.innerHTML = `
+            <div class="item-preview ${item.preview}"></div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-price">${isOwned ? 'OWNED' : item.price + ' P'}</div>
+        `;
+
+        // 버튼 생성
+        const btn = document.createElement('button');
+        if (isOwned) {
+            btn.className = 'equip-btn';
+            btn.innerText = isEquipped ? 'EQUIPPED' : 'EQUIP';
+            if (!isEquipped) {
+                btn.onclick = () => equipSkin(item.id);
             }
+        } else {
+            btn.className = 'buy-btn';
+            btn.innerText = 'BUY';
+            btn.onclick = () => buySkin(item);
         }
-    } 
-    else if (level === 12) {
-        // [Stage 12] 트릴(Trill) & 계단 & 롱노트 (Speed 10)
-        let t = 1000;
-        while(t < duration) {
-            let section = Math.floor(seededRandom() * 4);
-            
-            if (section === 0) { 
-                // [트릴] 1-2-1-2 반복
-                let l1 = 1, l2 = 2;
-                for(let i=0; i<8; i++) {
-                    pattern.push({ time: t, track: (i%2===0 ? l1 : l2), type: 'normal', length: 35 });
-                    t += 150;
-                }
-            } else if (section === 1) { 
-                // [계단] 0-1-2-3
-                for(let k=0; k<2; k++) {
-                    for(let i=0; i<4; i++) {
-                        pattern.push({ time: t, track: i, type: 'normal', length: 35 });
-                        t += 150;
-                    }
-                }
-            } else if (section === 2) { 
-                // [롱노트 + 단타]
-                let lane = Math.floor(seededRandom() * 4);
-                pattern.push({ time: t, track: lane, type: 'long', length: 400 });
-                // 롱노트 누르는 동안 다른 손으로 단타
-                pattern.push({ time: t+100, track: (lane+2)%4, type: 'normal', length: 35 });
-                pattern.push({ time: t+300, track: (lane+3)%4, type: 'normal', length: 35 });
-                t += 600;
-            } else {
-                // [휴식 및 정비]
-                pattern.push({ time: t, track: Math.floor(seededRandom()*4), type: 'normal', length: 35 });
-                t += 400;
-            }
-        }
-    } 
-    else {
-        // [Stage 1 ~ 10] 난이도별 고정 생성
-        for (let t = 1000; t < duration; t += baseInterval) {
-            const isLong = seededRandom() < 0.2; // seededRandom 사용
-            const track = Math.floor(seededRandom() * 4);
-            const len = isLong ? 200 : 35;
-            
-            pattern.push({ time: t, track: track, type: isLong?'long':'normal', length: len });
-            
-            // 고레벨일수록 동시치기 확률 증가
-            if (level > 5 && seededRandom() < (level * 0.05)) {
-                 pattern.push({ time: t, track: (track + 2) % 4, type: 'normal', length: 35 });
-            }
-        }
+        
+        div.appendChild(btn);
+        grid.appendChild(div);
+    });
+}
+
+function buySkin(item) {
+    if (points >= item.price) {
+        points -= item.price;
+        ownedSkins.push(item.id);
+        saveData();
+        renderShop();
+    } else {
+        alert("Not enough points!");
     }
+}
 
-    // 시간 순서대로 정렬 (필수)
-    pattern.sort((a, b) => a.time - b.time);
-    return pattern;
+function equipSkin(id) {
+    equippedSkin = id;
+    saveData();
+    renderShop();
+}
+
+function updatePointDisplay() {
+    document.getElementById('user-points').innerText = `POINTS: ${points}`;
 }
 
 // ==========================================
@@ -184,9 +183,13 @@ function openModeSelect() {
 }
 
 function backToTitle() {
-    document.getElementById('mode-select-screen').classList.remove('active');
-    document.getElementById('mode-select-screen').classList.add('hidden');
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('hidden');
+    });
+    document.getElementById('title-screen').classList.remove('hidden');
     document.getElementById('title-screen').classList.add('active');
+    updatePointDisplay();
 }
 
 function startPracticeMode() {
@@ -195,15 +198,19 @@ function startPracticeMode() {
     document.getElementById('mode-title').innerText = "PRACTICE";
     document.getElementById('target-box').classList.add('hidden');
     document.getElementById('infinity-stats').classList.add('hidden'); 
+    document.getElementById('speed-box').classList.add('hidden');
     startGame();
 }
 
 function startInfinityMode() {
     gameMode = 'infinity';
+    infinitySpeed = 5; // 초기 속도 5
     document.getElementById('mode-select-screen').classList.remove('active');
     document.getElementById('mode-title').innerText = "INFINITY";
     document.getElementById('target-box').classList.add('hidden');
     document.getElementById('infinity-stats').classList.remove('hidden');
+    document.getElementById('speed-box').classList.remove('hidden');
+    document.getElementById('current-speed-display').innerText = infinitySpeed.toFixed(1);
     document.getElementById('high-score').innerText = highScore;
     startGame();
 }
@@ -247,7 +254,6 @@ function startStageMode(level) {
     const data = STAGE_DATA.find(d => d.level === level);
     targetScore = data.target;
 
-    // [중요] 해당 레벨에 맞는 고정 패턴 생성
     stageNoteQueue = generateFixedPattern(level);
     nextNoteIndex = 0;
 
@@ -256,10 +262,11 @@ function startStageMode(level) {
     document.getElementById('target-box').classList.remove('hidden');
     document.getElementById('target-score').innerText = targetScore;
     document.getElementById('infinity-stats').classList.add('hidden');
+    document.getElementById('speed-box').classList.add('hidden');
     startGame();
 }
 
-// 설정 함수들
+// 설정 함수 (기존 유지)
 function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); }
 function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); bindingTrack = -1; updateKeyLabels(); }
 function changeUserSpeed(amount) {
@@ -283,6 +290,103 @@ function updateKeyLabels() {
     }
 }
 
+// 패턴 생성 (기존 유지)
+function generateFixedPattern(level) {
+    setSeed(level * 100); 
+    const pattern = [];
+    const duration = 40000 + (level * 2000); 
+    
+    let baseInterval = Math.max(200, 800 - (level * 50)); 
+    if (level >= 11) baseInterval = 180; 
+
+    if (level === 13) {
+        let t = 1000;
+        while(t < duration) {
+            let lane = Math.floor(seededRandom() * 4);
+            pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+            if (seededRandom() < 0.3) {
+                let trapLane = (lane + 1 + Math.floor(seededRandom() * 3)) % 4;
+                pattern.push({ time: t, track: trapLane, type: 'trap', length: 35 });
+            }
+            if (seededRandom() < 0.2) {
+                 let lane2 = (lane + 2) % 4;
+                 pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
+            }
+            t += 200;
+        }
+    }
+    else if (level === 11) {
+        let t = 1000;
+        while(t < duration) {
+            let pType = Math.floor(seededRandom() * 3);
+            if (pType === 0) { 
+                for(let i=0; i<4; i++) {
+                    pattern.push({ time: t, track: Math.floor(seededRandom() * 4), type: 'normal', length: 35 });
+                    t += 300;
+                }
+            } else if (pType === 1) { 
+                for(let i=0; i<4; i++) {
+                    let lane = Math.floor(seededRandom() * 4);
+                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+                    t += 150; 
+                    pattern.push({ time: t, track: (lane+1)%4, type: 'normal', length: 35 });
+                    t += 450; 
+                }
+            } else { 
+                for(let i=0; i<2; i++) {
+                    let lane = Math.floor(seededRandom() * 4);
+                    let lane2 = (lane + 2) % 4;
+                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+                    pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
+                    t += 600;
+                }
+            }
+        }
+    } 
+    else if (level === 12) {
+        let t = 1000;
+        while(t < duration) {
+            let section = Math.floor(seededRandom() * 4);
+            if (section === 0) { 
+                let l1 = 1, l2 = 2;
+                for(let i=0; i<8; i++) {
+                    pattern.push({ time: t, track: (i%2===0 ? l1 : l2), type: 'normal', length: 35 });
+                    t += 150;
+                }
+            } else if (section === 1) { 
+                for(let k=0; k<2; k++) {
+                    for(let i=0; i<4; i++) {
+                        pattern.push({ time: t, track: i, type: 'normal', length: 35 });
+                        t += 150;
+                    }
+                }
+            } else if (section === 2) { 
+                let lane = Math.floor(seededRandom() * 4);
+                pattern.push({ time: t, track: lane, type: 'long', length: 400 });
+                pattern.push({ time: t+100, track: (lane+2)%4, type: 'normal', length: 35 });
+                pattern.push({ time: t+300, track: (lane+3)%4, type: 'normal', length: 35 });
+                t += 600;
+            } else {
+                pattern.push({ time: t, track: Math.floor(seededRandom()*4), type: 'normal', length: 35 });
+                t += 400;
+            }
+        }
+    } 
+    else {
+        for (let t = 1000; t < duration; t += baseInterval) {
+            const isLong = seededRandom() < 0.2;
+            const track = Math.floor(seededRandom() * 4);
+            const len = isLong ? 200 : 35;
+            pattern.push({ time: t, track: track, type: isLong?'long':'normal', length: len });
+            if (level > 5 && seededRandom() < (level * 0.05)) {
+                 pattern.push({ time: t, track: (track + 2) % 4, type: 'normal', length: 35 });
+            }
+        }
+    }
+    pattern.sort((a, b) => a.time - b.time);
+    return pattern;
+}
+
 // ==========================================
 // 3. 게임 시작/루프
 // ==========================================
@@ -304,13 +408,14 @@ function retryGame() {
 }
 
 function nextStage() {
-    if (currentStage < 12) startStageMode(currentStage + 1);
+    if (currentStage < 13) startStageMode(currentStage + 1);
     else backToModeSelect();
 }
 
 function resetGame() {
     isPlaying = true;
     score = 0;
+    earnedPoints = 0;
     combo = 0;
     lives = MAX_LIVES;
     isInvincible = false;
@@ -346,7 +451,14 @@ function gameOver() {
         highScore = score;
         saveData();
     }
+    
+    // [NEW] 포인트 정산 (1000점당 1포인트)
+    earnedPoints = Math.floor(score / 1000);
+    points += earnedPoints;
+    saveData();
+
     document.getElementById('final-score').innerText = score;
+    document.getElementById('earned-points').innerText = earnedPoints;
     document.getElementById('game-over-screen').classList.remove('hidden');
 }
 
@@ -357,9 +469,15 @@ function stageClear() {
 
     if (!clearedStages.includes(currentStage)) {
         clearedStages.push(currentStage);
-        saveData();
     }
+    
+    // 포인트 정산
+    earnedPoints = Math.floor(score / 1000);
+    points += earnedPoints;
+    saveData();
+
     document.getElementById('clear-final-score').innerText = score;
+    document.getElementById('clear-earned-points').innerText = earnedPoints;
     document.getElementById('stage-clear-screen').classList.remove('hidden');
 }
 
@@ -370,23 +488,16 @@ function spawnLoop() {
     if (!isPlaying) return;
 
     if (gameMode === 'stage') {
-        // [Stage Mode] 미리 생성된 큐에서 노트 꺼내기
         const currentTime = Date.now() - stageStartTime;
-        
         while (nextNoteIndex < stageNoteQueue.length) {
             const noteData = stageNoteQueue[nextNoteIndex];
-            
-            // 등장 시간이 안 됐으면 대기 (약간의 오차 허용)
             if (noteData.time > currentTime + 30) {
                 spawnTimer = setTimeout(spawnLoop, 10);
                 return;
             }
-
-            createNote(noteData.track, noteData.type === 'long', noteData.length);
+            createNote(noteData.track, noteData.type === 'long', noteData.length, noteData.type === 'trap');
             nextNoteIndex++;
         }
-        
-        // 큐 소진 시 종료 체크
         if (nextNoteIndex >= stageNoteQueue.length) {
              if (notes.length === 0) {
                  if (score < targetScore) gameOver(); 
@@ -398,12 +509,20 @@ function spawnLoop() {
         }
     } 
     else {
-        // [Practice / Infinity] 랜덤 생성
         let currentSpeed, currentGap;
 
         if (gameMode === 'infinity') {
-            currentSpeed = 8;
-            currentGap = 350; 
+            // [NEW] 인피니티 모드 속도 증가 로직
+            // 시간이 지날수록, 혹은 노트가 생성될 때마다 속도 증가 (최대 15)
+            if (infinitySpeed < 15) {
+                infinitySpeed += 0.005; // 천천히 증가
+            }
+            currentSpeed = infinitySpeed;
+            document.getElementById('current-speed-display').innerText = infinitySpeed.toFixed(1);
+            
+            // 속도가 빠를수록 간격 줄임
+            currentGap = 350 - (currentSpeed * 5); 
+            if(currentGap < 150) currentGap = 150;
         } else {
             currentSpeed = userSettingSpeed;
             currentGap = (Math.random() * 500 + 400) * (5 / currentSpeed);
@@ -420,7 +539,7 @@ function spawnLoop() {
 
         const isLong = Math.random() < 0.2;
         const length = isLong ? Math.random() * 200 + 150 : 35;
-        createNote(track, isLong, length);
+        createNote(track, isLong, length, false); 
 
         const nextTime = (gameMode === 'infinity') 
             ? currentGap + (Math.random() * 300 - 50)
@@ -430,18 +549,31 @@ function spawnLoop() {
     }
 }
 
-function createNote(trackIdx, isLong, length) {
+function createNote(trackIdx, isLong, length, isTrap) {
     const trackEl = document.getElementById(`track-${trackIdx}`);
     const noteEl = document.createElement('div');
+    
+    // [NEW] 스킨 적용 (함정 노트가 아닐 때만)
     noteEl.classList.add('note', `col-${trackIdx}`);
-    if (isLong) noteEl.classList.add('long');
+    if (isTrap) {
+        noteEl.classList.add('trap');
+    } else {
+        if (isLong) noteEl.classList.add('long');
+        // 스킨 클래스 추가 (equippedSkin이 default가 아니면)
+        if (equippedSkin && equippedSkin !== 'default') {
+            const item = SHOP_ITEMS.find(i => i.id === equippedSkin);
+            if(item) noteEl.classList.add(item.class);
+        }
+    }
+    
     noteEl.style.height = `${length}px`;
     noteEl.style.top = `-${length}px`;
     trackEl.appendChild(noteEl);
 
     notes.push({
         el: noteEl, track: trackIdx, y: -length, length: length,
-        type: isLong ? 'long' : 'normal', isHeld: false, processed: false
+        type: isTrap ? 'trap' : (isLong ? 'long' : 'normal'), 
+        isHeld: false, processed: false
     });
 }
 
@@ -456,7 +588,7 @@ function gameLoop() {
         const data = STAGE_DATA.find(d => d.level === currentStage);
         speed = data ? data.speed : 5;
     } else if (gameMode === 'infinity') {
-        speed = 8;
+        speed = infinitySpeed;
     } else {
         speed = userSettingSpeed;
     }
@@ -481,9 +613,12 @@ function gameLoop() {
 
         if (!note.processed && headY > JUDGMENT_Y + HIT_RANGE_GOOD) {
             if (!note.isHeld) {
-                note.processed = true;
-                note.el.style.opacity = 0.3;
-                processMiss(note.track);
+                if (note.type === 'trap') { }
+                else {
+                    note.processed = true;
+                    note.el.style.opacity = 0.3;
+                    processMiss(note.track);
+                }
             }
         }
 
@@ -519,7 +654,6 @@ document.addEventListener('keydown', e => {
         return;
     }
     if (document.getElementById('title-screen').classList.contains('active')) return;
-
     if (e.code === 'KeyR') {
         if (isPlaying || !document.getElementById('game-over-screen').classList.contains('hidden')) retryGame();
         return;
@@ -532,29 +666,38 @@ document.addEventListener('keydown', e => {
     keyState[trackIdx] = true;
     document.getElementById(`track-${trackIdx}`).classList.add('active');
 
-    const target = notes.find(n => 
+    let candidates = notes.filter(n => 
         n.track === trackIdx && !n.processed && !n.isHeld &&
         Math.abs((n.y + n.length) - JUDGMENT_Y) <= HIT_RANGE_GOOD
     );
+    candidates.sort((a, b) => Math.abs((a.y + a.length) - JUDGMENT_Y) - Math.abs((b.y + b.length) - JUDGMENT_Y));
+    const target = candidates[0];
 
     if (target) {
-        const diff = Math.abs((target.y + target.length) - JUDGMENT_Y);
-        const judgment = diff <= HIT_RANGE_PERFECT ? "PERFECT" : "GOOD";
-        
-        if (target.type === 'normal') {
-            processHit(trackIdx, judgment, judgment==="PERFECT"?300:100);
+        if (target.type === 'trap') {
             target.processed = true;
-            target.el.remove();
-            const idx = notes.indexOf(target);
-            if (idx > -1) notes.splice(idx, 1);
-        } else {
-            target.isHeld = true;
-            document.getElementById(`track-${trackIdx}`).classList.add('holding'); 
-            processHit(trackIdx, judgment, 0);
+            target.el.style.display = 'none'; 
+            triggerExplosion(trackIdx);
+        } 
+        else {
+            const diff = Math.abs((target.y + target.length) - JUDGMENT_Y);
+            const judgment = diff <= HIT_RANGE_PERFECT ? "PERFECT" : "GOOD";
+            
+            if (target.type === 'normal') {
+                processHit(trackIdx, judgment, judgment==="PERFECT"?300:100);
+                target.processed = true;
+                target.el.remove();
+                const idx = notes.indexOf(target);
+                if (idx > -1) notes.splice(idx, 1);
+            } else { 
+                target.isHeld = true;
+                document.getElementById(`track-${trackIdx}`).classList.add('holding'); 
+                processHit(trackIdx, judgment, 0);
+            }
         }
     } else {
         const holding = notes.find(n => n.track === trackIdx && n.isHeld);
-        if (!holding) processMiss(trackIdx);
+        if (!holding) processMiss(trackIdx); 
     }
 });
 
@@ -574,11 +717,23 @@ document.addEventListener('keyup', e => {
     }
 });
 
+function triggerExplosion(trackIdx) {
+    lives--;
+    updateLivesUI();
+    showMessage("BOOM!", "#ff00ff");
+    combo = 0; 
+    updateUI();
+    const t = document.getElementById(`track-${trackIdx}`);
+    t.classList.add('hit-miss');
+    setTimeout(() => t.classList.remove('hit-miss'), 150);
+    if (lives <= 0) gameOver();
+    else activateInvincibility();
+}
+
 function processHit(trackIdx, text, addScore) {
     score += addScore;
     combo++;
     if (combo > maxCombo) maxCombo = combo;
-    
     if (gameMode === 'infinity' && score > highScore) {
         highScore = score;
         document.getElementById('high-score').innerText = highScore;
