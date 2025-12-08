@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Rhythm Game : Patterns</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="title-screen" class="screen active">
+        <h1 class="game-title">NEON BEAT</h1>
+        <button class="menu-btn" onclick="openModeSelect()">GAME START</button>
+        <button class="menu-btn" onclick="openSettings()" style="margin-top:20px;">SETTINGS</button>
+        <p class="footer">Fixed Pattern Update</p>
+    </div>
+
+    <div id="mode-select-screen" class="screen hidden">
+        <h2>SELECT MODE</h2>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="startPracticeMode()">PRACTICE<br><span style="font-size:14px; color:#aaa;">Random / Custom Speed</span></button>
+            <button class="menu-btn" onclick="openStageSelect()">STAGE MODE<br><span style="font-size:14px; color:#aaa;">Fixed Patterns (1~12)</span></button>
+            <button class="menu-btn" onclick="startInfinityMode()">INFINITY<br><span style="font-size:14px; color:#aaa;">Endless Random</span></button>
+        </div>
+        <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
+    </div>
+
+    <div id="stage-select-screen" class="screen hidden">
+        <h2>SELECT STAGE</h2>
+        <div class="stage-grid">
+            </div>
+        <button class="menu-btn small back-btn" onclick="backToModeSelect()">BACK</button>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>SETTINGS</h2>
+            <p class="sub-text">Applies to Practice Mode Only</p>
+            
+            <div class="setting-section">
+                <h3>KEY CONFIG</h3>
+                <div class="key-config-row">
+                    <div class="key-input-box" id="key-0" onclick="startBinding(0)">D</div>
+                    <div class="key-input-box" id="key-1" onclick="startBinding(1)">F</div>
+                    <div class="key-input-box" id="key-2" onclick="startBinding(2)">J</div>
+                    <div class="key-input-box" id="key-3" onclick="startBinding(3)">K</div>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="setting-section">
+                <h3>PRACTICE SPEED</h3>
+                <div class="speed-control-row">
+                    <button class="control-btn" onclick="changeUserSpeed(-1)">-</button>
+                    <div class="speed-display" id="speed-val">5</div>
+                    <button class="control-btn" onclick="changeUserSpeed(1)">+</button>
+                </div>
+            </div>
+            <button class="menu-btn small" onclick="closeSettings()" style="margin-top: 30px;">SAVE & CLOSE</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div class="main-layout">
+            
+            <div class="side-panel left">
+                <div class="panel-box info-box">
+                    <h2 id="mode-title">MODE</h2>
+                    <div class="key-row">
+                        <span id="guide-0">D</span><span id="guide-1">F</span><span id="guide-2">J</span><span id="guide-3">K</span>
+                    </div>
+                    <div id="target-box" class="hidden">
+                        <p class="label">TARGET</p>
+                        <p class="value" id="target-score">0</p>
+                    </div>
+                </div>
+                <button class="menu-btn small back-btn" onclick="backToModeSelect()">EXIT</button>
+            </div>
+
+            <div class="game-wrapper">
+                <div class="game-container" id="game-container">
+                    <div class="ui-layer">
+                        <div class="score-display">SCORE <span id="score">0</span></div>
+                        <div class="combo-display">COMBO <span id="combo">0</span></div>
+                    </div>
+                    
+                    <div id="game-over-screen" class="overlay hidden">
+                        <h1>GAME OVER</h1>
+                        <p>FINAL SCORE: <span id="final-score">0</span></p>
+                        <button class="menu-btn small" onclick="retryGame()">RETRY (R)</button>
+                        <button class="menu-btn small" onclick="backToModeSelect()">EXIT</button>
+                    </div>
+
+                    <div id="stage-clear-screen" class="overlay hidden">
+                        <h1 style="color:#00ff00; text-shadow:0 0 30px #00ff00;">STAGE CLEAR!</h1>
+                        <p>SCORE: <span id="clear-final-score">0</span></p>
+                        <button class="menu-btn small" onclick="nextStage()">NEXT STAGE</button>
+                        <button class="menu-btn small" onclick="backToModeSelect()">MENU</button>
+                    </div>
+
+                    <div class="message" id="message">READY</div>
+                    <div class="judgment-line" id="judgment-line"></div>
+
+                    <div class="track-container">
+                        <div class="track" id="track-0"><div class="effect-burst"></div><div class="key-guide" id="track-guide-0">D</div></div>
+                        <div class="track" id="track-1"><div class="effect-burst"></div><div class="key-guide" id="track-guide-1">F</div></div>
+                        <div class="track" id="track-2"><div class="effect-burst"></div><div class="key-guide" id="track-guide-2">J</div></div>
+                        <div class="track" id="track-3"><div class="effect-burst"></div><div class="key-guide" id="track-guide-3">K</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-panel right">
+                <div class="panel-box life-box">
+                    <div class="label">LIFE</div>
+                    <div class="hearts" id="lives">❤️❤️❤️</div>
+                </div>
+                
+                <div id="infinity-stats" class="hidden">
+                    <div class="panel-box max-combo-box">
+                        <div class="label">MAX COMBO</div>
+                        <div class="value" id="max-combo">0</div>
+                    </div>
+                    <div class="panel-box high-score-box">
+                        <div class="label">HIGH SCORE</div>
+                        <div class="value" id="high-score">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
