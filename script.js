@@ -12,7 +12,15 @@ const SHOP_ITEMS = [
     { id: 'gold',    name: 'GOLD RUSH',      price: 100, class: 'skin-gold', preview: 'preview-gold' },
     { id: 'matrix',  name: 'THE MATRIX',     price: 250, class: 'skin-matrix', preview: 'preview-matrix' },
     { id: 'fire',    name: 'INFERNO',        price: 500, class: 'skin-fire', preview: 'preview-fire' },
-    { id: 'ice',     name: 'FROST BITE',     price: 500, class: 'skin-ice', preview: 'preview-ice' }
+    { id: 'ice',     name: 'FROST BITE',     price: 500, class: 'skin-ice', preview: 'preview-ice' },
+    { id: 'chromatic', name: 'CHROMATIC',    price: 1000, class: 'skin-chromatic', preview: 'preview-chromatic' }
+];
+
+const BACKGROUND_ITEMS = [
+    { id: 'bg_default', name: 'DARK VOID', price: 0, class: 'bg-skin-default', preview: 'preview-bg-default' },
+    { id: 'bg_space',   name: 'DEEP SPACE', price: 500, class: 'bg-skin-space', preview: 'preview-bg-space' },
+    { id: 'bg_cyber',   name: 'CYBER GRID', price: 1500, class: 'bg-skin-cyber', preview: 'preview-bg-cyber' },
+    { id: 'bg_sunset',  name: 'VAPORWAVE',  price: 2000, class: 'bg-skin-sunset', preview: 'preview-bg-sunset' }
 ];
 
 // --- 스테이지 데이터 ---
@@ -34,7 +42,7 @@ const STAGE_DATA = [
 
 // --- 변수 ---
 let userSettingSpeed = 5;
-let infinitySpeed = 5; // [NEW] 인피니티 모드 가변 속도
+let infinitySpeed = 5; 
 
 let userKeys = ['KeyD', 'KeyF', 'KeyJ', 'KeyK']; 
 let bindingTrack = -1;
@@ -44,8 +52,8 @@ let currentStage = 1;
 let targetScore = 0;       
 
 let score = 0;
-let points = 0; // [NEW] 소지 포인트
-let earnedPoints = 0; // 이번 판에 얻은 포인트
+let points = 0; 
+let earnedPoints = 0; 
 let highScore = 0;
 let combo = 0;
 let maxCombo = 0;
@@ -63,11 +71,12 @@ let nextNoteIndex = 0;
 
 let clearedStages = []; 
 
-// [NEW] 스킨 관련 변수
 let ownedSkins = ['default'];
 let equippedSkin = 'default';
+let ownedBackgrounds = ['bg_default'];
+let equippedBackground = 'bg_default';
+let currentShopTab = 'note'; 
 
-// 시드 기반 랜덤
 let _seed = 1;
 function setSeed(s) { _seed = s; }
 function seededRandom() {
@@ -75,23 +84,14 @@ function seededRandom() {
     return _seed / 233280;
 }
 
-// --- 저장 데이터 로드/저장 ---
 function loadData() {
-    const savedScore = localStorage.getItem('neonBeatInfiniteHighScore');
-    if (savedScore) highScore = parseInt(savedScore);
-    
-    const savedStages = localStorage.getItem('neonBeatClearedStages');
-    if (savedStages) clearedStages = JSON.parse(savedStages);
-
-    const savedPoints = localStorage.getItem('neonBeatPoints');
-    if (savedPoints) points = parseInt(savedPoints);
-
-    const savedSkins = localStorage.getItem('neonBeatOwnedSkins');
-    if (savedSkins) ownedSkins = JSON.parse(savedSkins);
-
-    const savedEquip = localStorage.getItem('neonBeatEquippedSkin');
-    if (savedEquip) equippedSkin = savedEquip;
-
+    if(localStorage.getItem('neonBeatInfiniteHighScore')) highScore = parseInt(localStorage.getItem('neonBeatInfiniteHighScore'));
+    if(localStorage.getItem('neonBeatClearedStages')) clearedStages = JSON.parse(localStorage.getItem('neonBeatClearedStages'));
+    if(localStorage.getItem('neonBeatPoints')) points = parseInt(localStorage.getItem('neonBeatPoints'));
+    if(localStorage.getItem('neonBeatOwnedSkins')) ownedSkins = JSON.parse(localStorage.getItem('neonBeatOwnedSkins'));
+    if(localStorage.getItem('neonBeatEquippedSkin')) equippedSkin = localStorage.getItem('neonBeatEquippedSkin');
+    if(localStorage.getItem('neonBeatOwnedBackgrounds')) ownedBackgrounds = JSON.parse(localStorage.getItem('neonBeatOwnedBackgrounds'));
+    if(localStorage.getItem('neonBeatEquippedBackground')) equippedBackground = localStorage.getItem('neonBeatEquippedBackground');
     updatePointDisplay();
 }
 
@@ -101,15 +101,162 @@ function saveData() {
     localStorage.setItem('neonBeatPoints', points);
     localStorage.setItem('neonBeatOwnedSkins', JSON.stringify(ownedSkins));
     localStorage.setItem('neonBeatEquippedSkin', equippedSkin);
+    localStorage.setItem('neonBeatOwnedBackgrounds', JSON.stringify(ownedBackgrounds));
+    localStorage.setItem('neonBeatEquippedBackground', equippedBackground);
 }
 
 // ==========================================
-// 1. 상점 시스템 (NEW)
+// 1. 고정 패턴 생성기 (버그 수정: 롱노트 시간 계산)
+// ==========================================
+function generateFixedPattern(level) {
+    setSeed(level * 100); 
+    const pattern = [];
+    const duration = 40000 + (level * 2000); 
+    
+    // 현재 레벨의 속도 가져오기 (시간 계산용)
+    const stageInfo = STAGE_DATA.find(d => d.level === level);
+    const speed = stageInfo ? stageInfo.speed : 5;
+    
+    // 속도(px/frame)를 시간(ms/px)으로 변환 (60fps 기준)
+    // 1 frame = 16.6ms. speed 10 = 10px/16.6ms = 0.6px/ms
+    const pxPerMs = speed * 0.06;
+
+    let baseInterval = Math.max(200, 800 - (level * 50)); 
+    if (level >= 11) baseInterval = 180; 
+
+    // --- 스테이지별 패턴 ---
+    
+    if (level === 13) {
+        // [Stage 13] 함정 & 쏟아지는 노트 (Speed 11)
+        let t = 1000;
+        while(t < duration) {
+            let lane = Math.floor(seededRandom() * 4);
+            pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+            
+            // 함정 (터지면 안됨)
+            if (seededRandom() < 0.35) {
+                let trapLane = (lane + 1 + Math.floor(seededRandom() * 3)) % 4;
+                pattern.push({ time: t, track: trapLane, type: 'trap', length: 35 });
+            }
+            // 동시타
+            if (seededRandom() < 0.25) {
+                 let lane2 = (lane + 2) % 4;
+                 pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
+            }
+            t += 180; // 매우 빠름
+        }
+    }
+    else if (level === 11) {
+        // [Stage 11] 엇박자
+        let t = 1000;
+        while(t < duration) {
+            let pType = Math.floor(seededRandom() * 3);
+            if (pType === 0) { // 정박
+                for(let i=0; i<4; i++) {
+                    pattern.push({ time: t, track: Math.floor(seededRandom() * 4), type: 'normal', length: 35 });
+                    t += 300;
+                }
+            } else if (pType === 1) { // 엇박
+                for(let i=0; i<4; i++) {
+                    let lane = Math.floor(seededRandom() * 4);
+                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+                    t += 150; 
+                    pattern.push({ time: t, track: (lane+1)%4, type: 'normal', length: 35 });
+                    t += 450; 
+                }
+            } else { // 동시
+                for(let i=0; i<2; i++) {
+                    let lane = Math.floor(seededRandom() * 4);
+                    let lane2 = (lane + 2) % 4;
+                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
+                    pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
+                    t += 600;
+                }
+            }
+        }
+    } 
+    else if (level === 12) {
+        // [Stage 12] 트릴 & 롱노트 (버그 수정됨)
+        let t = 1000;
+        while(t < duration) {
+            let section = Math.floor(seededRandom() * 4);
+            if (section === 0) { // 트릴
+                let l1 = 1, l2 = 2;
+                for(let i=0; i<8; i++) {
+                    pattern.push({ time: t, track: (i%2===0 ? l1 : l2), type: 'normal', length: 35 });
+                    t += 150;
+                }
+            } else if (section === 1) { // 계단
+                for(let k=0; k<2; k++) {
+                    for(let i=0; i<4; i++) {
+                        pattern.push({ time: t, track: i, type: 'normal', length: 35 });
+                        t += 150;
+                    }
+                }
+            } else if (section === 2) { 
+                // [수정] 롱노트 겹침 방지 로직
+                let lane = Math.floor(seededRandom() * 4);
+                let longLen = 400;
+                // 롱노트가 화면을 지나가는 시간 계산
+                let timeForLong = longLen / pxPerMs; 
+                
+                pattern.push({ time: t, track: lane, type: 'long', length: longLen });
+                
+                // 롱노트 누르는 동안 다른 손 단타
+                pattern.push({ time: t + 100, track: (lane+2)%4, type: 'normal', length: 35 });
+                pattern.push({ time: t + 300, track: (lane+3)%4, type: 'normal', length: 35 });
+                
+                // 롱노트가 끝날 때까지 시간 추가 (+여유시간 200ms)
+                t += (timeForLong + 200); 
+            } else {
+                pattern.push({ time: t, track: Math.floor(seededRandom()*4), type: 'normal', length: 35 });
+                t += 400;
+            }
+        }
+    } 
+    else {
+        // [Stage 1 ~ 10]
+        for (let t = 1000; t < duration; t += baseInterval) {
+            const isLong = seededRandom() < 0.2;
+            const track = Math.floor(seededRandom() * 4);
+            const len = isLong ? 200 : 35;
+            
+            pattern.push({ time: t, track: track, type: isLong?'long':'normal', length: len });
+            
+            // [수정] 롱노트면 그만큼 시간 더 밀기
+            if (isLong) {
+                let timeForLong = len / pxPerMs;
+                t += timeForLong; // 롱노트 길이만큼 시간 추가
+            }
+
+            if (level > 5 && seededRandom() < (level * 0.05)) {
+                 // 롱노트가 아닐때만 동시타 추가
+                 if (!isLong) {
+                    pattern.push({ time: t, track: (track + 2) % 4, type: 'normal', length: 35 });
+                 }
+            }
+        }
+    }
+    pattern.sort((a, b) => a.time - b.time);
+    return pattern;
+}
+
+// ==========================================
+// 2. 상점 및 메뉴 로직
 // ==========================================
 function openShop() {
     document.getElementById('title-screen').classList.remove('active');
     document.getElementById('shop-screen').classList.remove('hidden');
     document.getElementById('shop-screen').classList.add('active');
+    switchShopTab('note');
+}
+
+function switchShopTab(tab) {
+    currentShopTab = tab;
+    const tabs = document.querySelectorAll('.shop-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if(tab === 'note') tabs[0].classList.add('active');
+    else tabs[1].classList.add('active');
     renderShop();
 }
 
@@ -118,34 +265,35 @@ function renderShop() {
     grid.innerHTML = '';
     document.getElementById('shop-points').innerText = `POINTS: ${points}`;
 
-    SHOP_ITEMS.forEach(item => {
-        const isOwned = ownedSkins.includes(item.id);
-        const isEquipped = equippedSkin === item.id;
+    const items = currentShopTab === 'note' ? SHOP_ITEMS : BACKGROUND_ITEMS;
+    const ownedList = currentShopTab === 'note' ? ownedSkins : ownedBackgrounds;
+    const equippedId = currentShopTab === 'note' ? equippedSkin : equippedBackground;
+
+    items.forEach(item => {
+        const isOwned = ownedList.includes(item.id);
+        const isEquipped = equippedId === item.id;
         
         const div = document.createElement('div');
         div.className = `shop-item ${isOwned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}`;
         
-        // 아이템 HTML
         div.innerHTML = `
             <div class="item-preview ${item.preview}"></div>
             <div class="item-name">${item.name}</div>
             <div class="item-price">${isOwned ? 'OWNED' : item.price + ' P'}</div>
         `;
 
-        // 버튼 생성
         const btn = document.createElement('button');
         if (isOwned) {
             btn.className = 'equip-btn';
             btn.innerText = isEquipped ? 'EQUIPPED' : 'EQUIP';
             if (!isEquipped) {
-                btn.onclick = () => equipSkin(item.id);
+                btn.onclick = () => currentShopTab === 'note' ? equipSkin(item.id) : equipBackground(item.id);
             }
         } else {
             btn.className = 'buy-btn';
             btn.innerText = 'BUY';
-            btn.onclick = () => buySkin(item);
+            btn.onclick = () => currentShopTab === 'note' ? buySkin(item) : buyBackground(item);
         }
-        
         div.appendChild(btn);
         grid.appendChild(div);
     });
@@ -157,31 +305,43 @@ function buySkin(item) {
         ownedSkins.push(item.id);
         saveData();
         renderShop();
-    } else {
-        alert("Not enough points!");
-    }
+    } else alert("Not enough points!");
 }
-
+function buyBackground(item) {
+    if (points >= item.price) {
+        points -= item.price;
+        ownedBackgrounds.push(item.id);
+        saveData();
+        renderShop();
+    } else alert("Not enough points!");
+}
 function equipSkin(id) {
     equippedSkin = id;
     saveData();
     renderShop();
 }
-
+function equipBackground(id) {
+    equippedBackground = id;
+    saveData();
+    renderShop();
+}
 function updatePointDisplay() {
     document.getElementById('user-points').innerText = `POINTS: ${points}`;
 }
+function applyBackground() {
+    const container = document.getElementById('game-container');
+    BACKGROUND_ITEMS.forEach(bg => container.classList.remove(bg.class));
+    const bgItem = BACKGROUND_ITEMS.find(bg => bg.id === equippedBackground);
+    if(bgItem) container.classList.add(bgItem.class);
+    else container.classList.add('bg-skin-default');
+}
 
-// ==========================================
-// 2. 메뉴 및 화면 전환
-// ==========================================
-
+// 화면 전환
 function openModeSelect() {
     document.getElementById('title-screen').classList.remove('active');
     document.getElementById('mode-select-screen').classList.remove('hidden');
     document.getElementById('mode-select-screen').classList.add('active');
 }
-
 function backToTitle() {
     document.querySelectorAll('.screen').forEach(s => {
         s.classList.remove('active');
@@ -191,7 +351,6 @@ function backToTitle() {
     document.getElementById('title-screen').classList.add('active');
     updatePointDisplay();
 }
-
 function startPracticeMode() {
     gameMode = 'practice';
     document.getElementById('mode-select-screen').classList.remove('active');
@@ -201,10 +360,9 @@ function startPracticeMode() {
     document.getElementById('speed-box').classList.add('hidden');
     startGame();
 }
-
 function startInfinityMode() {
     gameMode = 'infinity';
-    infinitySpeed = 5; // 초기 속도 5
+    infinitySpeed = 5; 
     document.getElementById('mode-select-screen').classList.remove('active');
     document.getElementById('mode-title').innerText = "INFINITY";
     document.getElementById('target-box').classList.add('hidden');
@@ -214,14 +372,12 @@ function startInfinityMode() {
     document.getElementById('high-score').innerText = highScore;
     startGame();
 }
-
 function openStageSelect() {
     initStageButtons();
     document.getElementById('mode-select-screen').classList.remove('active');
     document.getElementById('stage-select-screen').classList.remove('hidden');
     document.getElementById('stage-select-screen').classList.add('active');
 }
-
 function backToModeSelect() {
     isPlaying = false;
     clearTimeout(spawnTimer);
@@ -233,7 +389,6 @@ function backToModeSelect() {
     document.getElementById('mode-select-screen').classList.remove('hidden');
     document.getElementById('mode-select-screen').classList.add('active');
 }
-
 function initStageButtons() {
     const grid = document.querySelector('.stage-grid');
     grid.innerHTML = '';
@@ -246,17 +401,13 @@ function initStageButtons() {
         grid.appendChild(btn);
     });
 }
-
 function startStageMode(level) {
     gameMode = 'stage';
     currentStage = level;
-    
     const data = STAGE_DATA.find(d => d.level === level);
     targetScore = data.target;
-
     stageNoteQueue = generateFixedPattern(level);
     nextNoteIndex = 0;
-
     document.getElementById('stage-select-screen').classList.remove('active');
     document.getElementById('mode-title').innerText = `STAGE ${level}`;
     document.getElementById('target-box').classList.remove('hidden');
@@ -266,7 +417,7 @@ function startStageMode(level) {
     startGame();
 }
 
-// 설정 함수 (기존 유지)
+// 설정 관련
 function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); }
 function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); bindingTrack = -1; updateKeyLabels(); }
 function changeUserSpeed(amount) {
@@ -290,103 +441,6 @@ function updateKeyLabels() {
     }
 }
 
-// 패턴 생성 (기존 유지)
-function generateFixedPattern(level) {
-    setSeed(level * 100); 
-    const pattern = [];
-    const duration = 40000 + (level * 2000); 
-    
-    let baseInterval = Math.max(200, 800 - (level * 50)); 
-    if (level >= 11) baseInterval = 180; 
-
-    if (level === 13) {
-        let t = 1000;
-        while(t < duration) {
-            let lane = Math.floor(seededRandom() * 4);
-            pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
-            if (seededRandom() < 0.3) {
-                let trapLane = (lane + 1 + Math.floor(seededRandom() * 3)) % 4;
-                pattern.push({ time: t, track: trapLane, type: 'trap', length: 35 });
-            }
-            if (seededRandom() < 0.2) {
-                 let lane2 = (lane + 2) % 4;
-                 pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
-            }
-            t += 200;
-        }
-    }
-    else if (level === 11) {
-        let t = 1000;
-        while(t < duration) {
-            let pType = Math.floor(seededRandom() * 3);
-            if (pType === 0) { 
-                for(let i=0; i<4; i++) {
-                    pattern.push({ time: t, track: Math.floor(seededRandom() * 4), type: 'normal', length: 35 });
-                    t += 300;
-                }
-            } else if (pType === 1) { 
-                for(let i=0; i<4; i++) {
-                    let lane = Math.floor(seededRandom() * 4);
-                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
-                    t += 150; 
-                    pattern.push({ time: t, track: (lane+1)%4, type: 'normal', length: 35 });
-                    t += 450; 
-                }
-            } else { 
-                for(let i=0; i<2; i++) {
-                    let lane = Math.floor(seededRandom() * 4);
-                    let lane2 = (lane + 2) % 4;
-                    pattern.push({ time: t, track: lane, type: 'normal', length: 35 });
-                    pattern.push({ time: t, track: lane2, type: 'normal', length: 35 });
-                    t += 600;
-                }
-            }
-        }
-    } 
-    else if (level === 12) {
-        let t = 1000;
-        while(t < duration) {
-            let section = Math.floor(seededRandom() * 4);
-            if (section === 0) { 
-                let l1 = 1, l2 = 2;
-                for(let i=0; i<8; i++) {
-                    pattern.push({ time: t, track: (i%2===0 ? l1 : l2), type: 'normal', length: 35 });
-                    t += 150;
-                }
-            } else if (section === 1) { 
-                for(let k=0; k<2; k++) {
-                    for(let i=0; i<4; i++) {
-                        pattern.push({ time: t, track: i, type: 'normal', length: 35 });
-                        t += 150;
-                    }
-                }
-            } else if (section === 2) { 
-                let lane = Math.floor(seededRandom() * 4);
-                pattern.push({ time: t, track: lane, type: 'long', length: 400 });
-                pattern.push({ time: t+100, track: (lane+2)%4, type: 'normal', length: 35 });
-                pattern.push({ time: t+300, track: (lane+3)%4, type: 'normal', length: 35 });
-                t += 600;
-            } else {
-                pattern.push({ time: t, track: Math.floor(seededRandom()*4), type: 'normal', length: 35 });
-                t += 400;
-            }
-        }
-    } 
-    else {
-        for (let t = 1000; t < duration; t += baseInterval) {
-            const isLong = seededRandom() < 0.2;
-            const track = Math.floor(seededRandom() * 4);
-            const len = isLong ? 200 : 35;
-            pattern.push({ time: t, track: track, type: isLong?'long':'normal', length: len });
-            if (level > 5 && seededRandom() < (level * 0.05)) {
-                 pattern.push({ time: t, track: (track + 2) % 4, type: 'normal', length: 35 });
-            }
-        }
-    }
-    pattern.sort((a, b) => a.time - b.time);
-    return pattern;
-}
-
 // ==========================================
 // 3. 게임 시작/루프
 // ==========================================
@@ -394,24 +448,21 @@ function startGame() {
     loadData();
     document.getElementById('game-screen').classList.remove('hidden');
     document.getElementById('game-screen').classList.add('active');
-    
+    applyBackground();
     resetGame();
     document.getElementById('game-over-screen').classList.add('hidden');
     document.getElementById('stage-clear-screen').classList.add('hidden');
     showMessage("START!", "#fff");
 }
-
 function retryGame() {
     if (gameMode === 'stage') startStageMode(currentStage);
     else if (gameMode === 'infinity') startInfinityMode();
     else startPracticeMode();
 }
-
 function nextStage() {
     if (currentStage < 13) startStageMode(currentStage + 1);
     else backToModeSelect();
 }
-
 function resetGame() {
     isPlaying = true;
     score = 0;
@@ -423,7 +474,6 @@ function resetGame() {
     
     notes = [];
     keyState = [false, false, false, false];
-    
     stageStartTime = Date.now();
 
     if (spawnTimer) clearTimeout(spawnTimer);
@@ -441,41 +491,31 @@ function resetGame() {
     gameLoop();
     spawnLoop();
 }
-
 function gameOver() {
     isPlaying = false;
     clearTimeout(spawnTimer);
     cancelAnimationFrame(animationFrameId);
-    
     if (gameMode === 'infinity' && score > highScore) {
         highScore = score;
         saveData();
     }
-    
-    // [NEW] 포인트 정산 (1000점당 1포인트)
     earnedPoints = Math.floor(score / 1000);
     points += earnedPoints;
     saveData();
-
     document.getElementById('final-score').innerText = score;
     document.getElementById('earned-points').innerText = earnedPoints;
     document.getElementById('game-over-screen').classList.remove('hidden');
 }
-
 function stageClear() {
     isPlaying = false;
     clearTimeout(spawnTimer);
     cancelAnimationFrame(animationFrameId);
-
     if (!clearedStages.includes(currentStage)) {
         clearedStages.push(currentStage);
     }
-    
-    // 포인트 정산
     earnedPoints = Math.floor(score / 1000);
     points += earnedPoints;
     saveData();
-
     document.getElementById('clear-final-score').innerText = score;
     document.getElementById('clear-earned-points').innerText = earnedPoints;
     document.getElementById('stage-clear-screen').classList.remove('hidden');
@@ -510,17 +550,12 @@ function spawnLoop() {
     } 
     else {
         let currentSpeed, currentGap;
-
         if (gameMode === 'infinity') {
-            // [NEW] 인피니티 모드 속도 증가 로직
-            // 시간이 지날수록, 혹은 노트가 생성될 때마다 속도 증가 (최대 15)
             if (infinitySpeed < 15) {
-                infinitySpeed += 0.005; // 천천히 증가
+                infinitySpeed += 0.005; 
             }
             currentSpeed = infinitySpeed;
             document.getElementById('current-speed-display').innerText = infinitySpeed.toFixed(1);
-            
-            // 속도가 빠를수록 간격 줄임
             currentGap = 350 - (currentSpeed * 5); 
             if(currentGap < 150) currentGap = 150;
         } else {
@@ -553,13 +588,11 @@ function createNote(trackIdx, isLong, length, isTrap) {
     const trackEl = document.getElementById(`track-${trackIdx}`);
     const noteEl = document.createElement('div');
     
-    // [NEW] 스킨 적용 (함정 노트가 아닐 때만)
     noteEl.classList.add('note', `col-${trackIdx}`);
     if (isTrap) {
         noteEl.classList.add('trap');
     } else {
         if (isLong) noteEl.classList.add('long');
-        // 스킨 클래스 추가 (equippedSkin이 default가 아니면)
         if (equippedSkin && equippedSkin !== 'default') {
             const item = SHOP_ITEMS.find(i => i.id === equippedSkin);
             if(item) noteEl.classList.add(item.class);
@@ -578,7 +611,7 @@ function createNote(trackIdx, isLong, length, isTrap) {
 }
 
 // ==========================================
-// 5. 게임 루프
+// 5. 게임 루프 (이동)
 // ==========================================
 function gameLoop() {
     if (!isPlaying) return;
