@@ -34,10 +34,10 @@ const STAGE_DATA = [
     { level: 7, speed: 9, target: 30000 },
     { level: 8, speed: 10, target: 36000 },
     { level: 9, speed: 11, target: 42000 },
-    { level: 10, speed: 13, target: 50000 },
-    { level: 11, speed: 10, target: 60000 },
-    { level: 12, speed: 10, target: 75000 },
-    { level: 13, speed: 11, target: 80000 } 
+    { level: 10, speed: 13, target: 45000 },
+    { level: 11, speed: 10, target: 50000 },
+    { level: 12, speed: 10, target: 60000 },
+    { level: 13, speed: 11, target: 60000 } 
 ];
 
 // --- 변수 ---
