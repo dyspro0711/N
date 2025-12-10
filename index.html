@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Rhythm Game : Final</title>
+    <title>Neon Rhythm Game : Backgrounds</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,21 +16,14 @@
         <button class="menu-btn" onclick="openModeSelect()">GAME START</button>
         <button class="menu-btn" onclick="openShop()">SHOP</button>
         <button class="menu-btn" onclick="openSettings()" style="margin-top:20px;">SETTINGS</button>
-        
-        <div class="test-users">
-            <h3>TEST USERS</h3>
-            <p>이지섭 재갈준</p>
-            <p>송민섭 고동훈</p>
-        </div>
-
-        <p class="footer">Ver 5.0 : SPEED & OPTIMIZATION</p>
+        <p class="footer">Ver 4.0 : BACKGROUND UPDATE</p>
     </div>
 
     <div id="mode-select-screen" class="screen hidden">
         <h2>SELECT MODE</h2>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="startPracticeMode()">PRACTICE<br><span style="font-size:14px; color:#aaa;">Random / Custom Speed</span></button>
-            <button class="menu-btn" onclick="openStageSelect()">STAGE MODE<br><span style="font-size:14px; color:#aaa;">Fixed Patterns (1~14)</span></button>
+            <button class="menu-btn" onclick="openStageSelect()">STAGE MODE<br><span style="font-size:14px; color:#aaa;">Fixed Patterns (1~13)</span></button>
             <button class="menu-btn" onclick="startInfinityMode()">INFINITY<br><span style="font-size:14px; color:#aaa;">Speed Up (Max 15)</span></button>
         </div>
         <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
@@ -41,10 +34,12 @@
         <div class="shop-header">
             <span id="shop-points">POINTS: 0</span>
         </div>
+        
         <div class="shop-tabs">
             <button class="shop-tab active" onclick="switchShopTab('note')">NOTE SKINS</button>
             <button class="shop-tab" onclick="switchShopTab('bg')">BACKGROUNDS</button>
         </div>
+
         <div class="shop-grid" id="shop-grid">
             </div>
         <button class="menu-btn small back-btn" onclick="backToTitle()">BACK</button>
@@ -61,6 +56,7 @@
         <div class="modal-content">
             <h2>SETTINGS</h2>
             <p class="sub-text">Applies to Practice Mode Only</p>
+            
             <div class="setting-section">
                 <h3>KEY CONFIG</h3>
                 <div class="key-config-row">
@@ -85,6 +81,7 @@
 
     <div id="game-screen" class="screen hidden">
         <div class="main-layout">
+            
             <div class="side-panel left">
                 <div class="panel-box info-box">
                     <h2 id="mode-title">MODE</h2>
@@ -143,6 +140,7 @@
                     <div class="label">LIFE</div>
                     <div class="hearts" id="lives">❤️❤️❤️</div>
                 </div>
+                
                 <div id="infinity-stats" class="hidden">
                     <div class="panel-box max-combo-box">
                         <div class="label">MAX COMBO</div>
