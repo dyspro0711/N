@@ -6,7 +6,6 @@ body {
     overflow: hidden; user-select: none;
 }
 
-/* 화면 관리 */
 .screen {
     position: absolute; width: 100%; height: 100%;
     display: flex; justify-content: center; align-items: center;
@@ -15,7 +14,6 @@ body {
 .screen.active { opacity: 1; pointer-events: auto; z-index: 10; }
 .hidden { display: none !important; }
 
-/* 타이틀 & 메뉴 공통 */
 #title-screen, #mode-select-screen, #stage-select-screen, #shop-screen { 
     background: radial-gradient(circle, #1a1a2e 0%, #000 100%); 
     flex-direction: column; 
@@ -26,6 +24,26 @@ body {
     margin-bottom: 20px; letter-spacing: 5px;
 }
 .user-info { font-size: 20px; color: #ffff00; margin-bottom: 30px; font-weight: bold; }
+
+/* [NEW] 테스트 유저 목록 스타일 */
+.test-users {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    text-align: left;
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.test-users h3 {
+    margin: 0 0 5px 0;
+    color: #00ffff;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+    display: inline-block;
+}
+.test-users p { margin: 0; font-weight: bold; }
 
 .menu-buttons { display: flex; flex-direction: column; gap: 20px; align-items: center; }
 .menu-btn {
@@ -39,72 +57,42 @@ body {
 .menu-btn.small:hover { background: #fff; color: #000; }
 .footer { margin-top: 50px; color: #555; }
 
-/* === 상점 화면 === */
+/* 상점 */
 .shop-header { font-size: 24px; color: #ffff00; margin-bottom: 20px; font-weight: bold; }
-
-/* [NEW] 상점 탭 */
 .shop-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-.shop-tab {
-    padding: 10px 20px; background: #222; border: 1px solid #555; color: #aaa;
-    cursor: pointer; border-radius: 5px 5px 0 0; font-weight: bold;
-}
+.shop-tab { padding: 10px 20px; background: #222; border: 1px solid #555; color: #aaa; cursor: pointer; border-radius: 5px 5px 0 0; font-weight: bold; }
 .shop-tab.active { background: #444; color: #fff; border-color: #00ffff; border-bottom: none; }
-
-.shop-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-    max-height: 500px; overflow-y: auto; padding: 10px;
-    border: 1px solid #444; border-radius: 8px; background: rgba(0,0,0,0.5);
-}
-.shop-item {
-    background: #222; border: 2px solid #555; border-radius: 10px;
-    width: 140px; padding: 15px; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-}
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #444; border-radius: 8px; background: rgba(0,0,0,0.5); }
+.shop-item { background: #222; border: 2px solid #555; border-radius: 10px; width: 140px; padding: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .shop-item.owned { border-color: #00ff00; }
 .shop-item.equipped { border-color: #00ffff; box-shadow: 0 0 15px #00ffff; background: #002222; }
-
-.item-preview {
-    width: 50px; height: 50px; border-radius: 5px; margin-bottom: 5px;
-    background-size: cover; background-position: center;
-}
-
-/* 스킨 프리뷰 */
+.item-preview { width: 50px; height: 50px; border-radius: 5px; margin-bottom: 5px; background-size: cover; background-position: center; }
 .preview-default { background: linear-gradient(45deg, #ff3366, #33ff66); }
 .preview-gold { background: linear-gradient(45deg, #ffd700, #ffaa00); border: 2px solid #fff; }
 .preview-matrix { background: #000; border: 1px solid #0f0; box-shadow: inset 0 0 10px #0f0; }
 .preview-fire { background: linear-gradient(to top, #ff0000, #ffff00); }
 .preview-ice { background: linear-gradient(to top, #00ffff, #ffffff); }
 .preview-chromatic { background: linear-gradient(90deg, #f00, #ff0, #0f0, #00f); border: 2px solid #fff; }
-
-/* 배경 프리뷰 */
 .preview-bg-default { background: linear-gradient(180deg, #000 0%, #0d0d1a 100%); }
 .preview-bg-space { background: radial-gradient(circle, #2b1055 0%, #000000 100%); }
 .preview-bg-cyber { background: repeating-linear-gradient(0deg, #000 0px, #000 20px, #001100 21px); }
 .preview-bg-sunset { background: linear-gradient(to top, #4a004a, #ff4500); }
-
 .item-name { font-weight: bold; color: #fff; font-size: 16px; }
 .item-price { color: #ffff00; font-size: 14px; }
-.buy-btn, .equip-btn {
-    padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;
-}
+.buy-btn, .equip-btn { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
 .buy-btn { background: #ffff00; color: #000; }
 .buy-btn:hover { background: #fff; }
 .equip-btn { background: #333; color: #aaa; cursor: default; }
 .shop-item.owned .equip-btn { background: #00ff00; color: #000; cursor: pointer; }
 .shop-item.equipped .equip-btn { background: #00ffff; color: #000; content: "EQUIPPED"; }
 
-/* === 스테이지 선택 === */
+/* 스테이지 */
 .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; }
-.stage-btn {
-    width: 70px; height: 70px; background: #222; border: 2px solid #555;
-    border-radius: 10px; font-size: 20px; font-weight: bold; color: #aaa;
-    cursor: pointer; transition: 0.2s;
-}
+.stage-btn { width: 70px; height: 70px; background: #222; border: 2px solid #555; border-radius: 10px; font-size: 20px; font-weight: bold; color: #aaa; cursor: pointer; transition: 0.2s; }
 .stage-btn:hover { border-color: #fff; background: #333; transform: scale(1.1); }
 .stage-btn.cleared { border-color: #00ff00; color: #fff; background: rgba(0, 255, 0, 0.1); box-shadow: 0 0 15px #00ff00; }
 .stage-btn.cleared:hover { background: #00ff00; color: #000; }
 
-/* 모달 및 설정 */
 .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
 .modal-content { background: #1a1a1a; padding: 40px; border-radius: 15px; border: 1px solid #444; text-align: center; width: 400px; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
 .setting-section h3 { color: #00ffff; margin-bottom: 5px; }
@@ -117,7 +105,6 @@ body {
 .control-btn:hover { background: #00ffff; color: black; }
 .speed-display { font-size: 30px; font-weight: bold; width: 50px; color: #fff; }
 
-/* 게임 UI */
 .main-layout { display: flex; gap: 30px; align-items: center; }
 .side-panel { width: 200px; display: flex; flex-direction: column; gap: 20px; }
 .panel-box { background: rgba(20, 20, 20, 0.9); border: 1px solid #333; border-radius: 10px; padding: 20px; text-align: center; }
@@ -127,28 +114,13 @@ body {
 #target-box .label { color: #00ff00; font-size: 14px; margin-bottom: 5px; }
 #target-box .value { color: #fff; font-size: 24px; font-weight: bold; }
 
-/* [NEW] 게임 컨테이너 및 배경 스킨 */
-.game-container { 
-    position: relative; width: 460px; height: 700px; 
-    border: 4px solid #333; border-radius: 8px; overflow: hidden; 
-    box-shadow: 0 0 60px rgba(0,0,0,0.8); 
-    transition: border-color 0.2s, background 0.5s; /* 배경 전환 부드럽게 */
-    background: linear-gradient(180deg, #000 0%, #0d0d1a 100%); /* 기본값 */
-}
-
-/* 배경 스킨 클래스들 */
+.game-container { position: relative; width: 460px; height: 700px; background: linear-gradient(180deg, #000 0%, #0d0d1a 100%); border: 4px solid #333; border-radius: 8px; overflow: hidden; box-shadow: 0 0 60px rgba(0,0,0,0.8); transition: border-color 0.2s; }
+.game-container.invincible-mode { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 50, 50, 0.5); opacity: 0.8; }
 .game-container.bg-skin-default { background: linear-gradient(180deg, #000 0%, #0d0d1a 100%); }
 .game-container.bg-skin-space { background: radial-gradient(circle, #2b1055 0%, #000000 100%); }
-.game-container.bg-skin-cyber { 
-    background: 
-        linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px),
-        linear-gradient(180deg, #000 0%, #001100 100%);
-    background-size: 20px 20px, 20px 20px, 100% 100%;
-}
+.game-container.bg-skin-cyber { background: linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px), linear-gradient(180deg, #000 0%, #001100 100%); background-size: 20px 20px, 20px 20px, 100% 100%; }
 .game-container.bg-skin-sunset { background: linear-gradient(to top, #4a004a, #ff4500); }
 
-.game-container.invincible-mode { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 50, 50, 0.5); opacity: 0.8; }
 .ui-layer { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 20; font-size: 20px; font-weight: bold; text-shadow: 0 2px 5px black; }
 .combo-display span { color: #00ffff; font-size: 24px; display: inline-block; transition: transform 0.1s; }
 .hearts { font-size: 24px; letter-spacing: 5px; transition: 0.2s; }
@@ -169,10 +141,12 @@ body {
 .track.holding .effect-burst { opacity: 0.6; transform: scaleY(0.8); animation: sparkFlicker 0.1s infinite alternate; background: radial-gradient(circle at bottom, #fff 0%, #ffff00 40%, transparent 70%); }
 @keyframes sparkFlicker { 0% { opacity: 0.5; height: 120px; } 100% { opacity: 0.8; height: 160px; } }
 
-.note { position: absolute; width: 100%; border-radius: 4px; box-sizing: border-box; z-index: 8; }
+/* [중요] 최적화: 노트 위치 변화를 브라우저에 미리 알려줌 */
+.note { 
+    position: absolute; width: 100%; border-radius: 4px; box-sizing: border-box; z-index: 8; 
+    will-change: top; /* 렌더링 성능 최적화 */
+}
 .note.long { opacity: 0.9; }
-
-/* 스킨 스타일 */
 .note.skin-gold { background: linear-gradient(180deg, #ffd700, #b8860b) !important; border: 2px solid #fff; box-shadow: 0 0 15px #ffd700; }
 .note.skin-matrix { background: #000 !important; border: 1px solid #0f0; box-shadow: inset 0 0 10px #0f0, 0 0 5px #0f0; font-family: monospace; }
 .note.skin-matrix::after { content: '1'; color: #0f0; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:10px; }
@@ -183,7 +157,6 @@ body {
 .note.skin-chromatic.col-1 { border-color: #ffff00; box-shadow: inset 0 0 15px #ffff00, 0 0 15px #ffff00; }
 .note.skin-chromatic.col-2 { border-color: #00ff00; box-shadow: inset 0 0 15px #00ff00, 0 0 15px #00ff00; }
 .note.skin-chromatic.col-3 { border-color: #0066ff; box-shadow: inset 0 0 15px #0066ff, 0 0 15px #0066ff; }
-
 .note.trap { background: #4a004a !important; border: 2px solid #ff00ff; box-shadow: 0 0 15px #ff00ff; border-radius: 50%; transform: scale(0.8); }
 .note.trap::after { content: '✖'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #ff00ff; font-weight: bold; font-size: 20px; }
 
